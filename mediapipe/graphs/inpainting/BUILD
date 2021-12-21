@@ -24,9 +24,12 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "inpainting_cpu_deps",
     deps = [
+        "//mediapipe/calculators/core:constant_side_packet_calculator",
         "//mediapipe/calculators/core:flow_limiter_calculator",
         "//mediapipe/calculators/image:recolor_calculator",
         "//mediapipe/modules/selfie_segmentation:selfie_segmentation_cpu",
+        "//mediapipe/modules/face_landmark:face_landmark_front_cpu",
+        "//mediapipe/graphs/face_mesh:desktop_live_calculators",
     ],
 )
 
