@@ -55,7 +55,7 @@ node {
     [type.googleapis.com/mediapipe.LandmarksToRenderDataCalculatorOptions] {
       landmark_color { r: 255 g: 0 b: 0 }
       connection_color { r: 0 g: 255 b: 0 }
-      thickness: 1
+      thickness: 2
       visualize_landmark_depth: false
     }
   }
@@ -71,16 +71,51 @@ node {
   output_stream: "ITERABLE:multi_face_landmarks_render_data"
 }
 
+node {
+  calculator: "SplitNormalizedRectVectorCalculator"
+  input_stream: "rects"
+  output_stream: "rect"
+  node_options: {
+    [type.googleapis.com/mediapipe.SplitVectorCalculatorOptions] {
+      ranges: { begin: 0 end: 1 }
+      element_only: true
+    }
+  }
+}
+
+# Change the final transformed rect into a square that shares the same center
+# and rotation with the rect, and with the side of the square equal to either
+# the long or short side of the rect respectively.
+#
+# optional bool square_long = 7;
+# optional bool square_short = 8;
+node {
+  calculator: "RectTransformationCalculator"
+  input_stream: "NORM_RECT:rect"
+  input_stream: "IMAGE_SIZE:image_size"
+  output_stream: "corpus_rect"
+  options: {
+    [mediapipe.RectTransformationCalculatorOptions.ext] {
+      scale_x: 1.25
+      scale_y: 0.75
+      shift_y: -0.6
+      square_long: true
+    }
+  }
+}
+
 # Converts normalized rects to drawing primitives for annotation overlay.
 node {
   calculator: "RectToRenderDataCalculator"
-  input_stream: "NORM_RECTS:rects"
-  output_stream: "RENDER_DATA:rects_render_data"
+  #input_stream: "NORM_RECTS:corpus_rect"
+  input_stream: "NORM_RECT:corpus_rect"
+  #output_stream: "RENDER_DATA:rects_render_data"
+  output_stream: "RENDER_DATA:corpus_rect_render_data"
   node_options: {
     [type.googleapis.com/mediapipe.RectToRenderDataCalculatorOptions] {
       filled: false
-      color { r: 255 g: 0 b: 0 }
-      thickness: 1.0
+      color { r: 255 g: 0 b: 255 }
+      thickness: 2.0
     }
   }
 }
@@ -91,6 +126,6 @@ node {
   input_stream: "IMAGE:input_image"
   input_stream: "detections_render_data"
   input_stream: "VECTOR:0:multi_face_landmarks_render_data"
-  input_stream: "rects_render_data"
+  input_stream: "corpus_rect_render_data"
   output_stream: "IMAGE:output_image"
 }
