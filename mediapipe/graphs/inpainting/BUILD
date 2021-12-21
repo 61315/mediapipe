@@ -29,7 +29,7 @@ cc_library(
         "//mediapipe/calculators/image:recolor_calculator",
         "//mediapipe/modules/selfie_segmentation:selfie_segmentation_cpu",
         "//mediapipe/modules/face_landmark:face_landmark_front_cpu",
-        "//mediapipe/graphs/face_mesh:desktop_live_calculators",
+        "//mediapipe/graphs/inpainting/subgraphs:face_renderer_cpu",
     ],
 )
 

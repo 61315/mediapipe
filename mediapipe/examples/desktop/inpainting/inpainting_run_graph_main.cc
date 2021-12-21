@@ -83,6 +83,7 @@ absl::Status RunMPPGraph() {
 
   LOG(INFO) << "Start grabbing and processing frames.";
   bool grab_frames = true;
+  size_t frame_count = 0;
   while (grab_frames) {
     // Capture opencv camera or video frame.
     cv::Mat camera_frame_raw;
@@ -131,13 +132,19 @@ absl::Status RunMPPGraph() {
                     capture.get(cv::CAP_PROP_FPS), output_frame_mat.size());
         RET_CHECK(writer.isOpened());
       }
+      
+      // Write the first 100 frames to a video if flag `output_video_path` is set.
       writer.write(output_frame_mat);
+      LOG(INFO) << "Writing frame " << frame_count << "...";
+      if (frame_count > 99) grab_frames = false;
     } else {
       cv::imshow(kWindowName, output_frame_mat);
       // Press any key to exit.
       const int pressed_key = cv::waitKey(5);
       if (pressed_key >= 0 && pressed_key != 255) grab_frames = false;
     }
+
+    frame_count++;
   }
 
   LOG(INFO) << "Shutting down.";
