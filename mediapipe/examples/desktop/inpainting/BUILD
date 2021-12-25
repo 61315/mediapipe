@@ -17,7 +17,7 @@ licenses(["notice"])
 package(default_visibility = ["//mediapipe/examples:__subpackages__"])
 
 cc_binary(
-    name = "inpainting_cpu",
+    name = "inpainting_cpu4",
     deps = [
         "//mediapipe/examples/desktop/inpainting:inpainting_run_graph_main",
         "//mediapipe/graphs/inpainting:inpainting_cpu_deps",

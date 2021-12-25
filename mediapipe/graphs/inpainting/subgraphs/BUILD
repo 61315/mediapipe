@@ -31,7 +31,7 @@ cc_library(
         "//mediapipe/calculators/util:landmarks_to_render_data_calculator",
         "//mediapipe/calculators/util:rect_to_render_data_calculator",
         "//mediapipe/calculators/util:rect_transformation_calculator",
-        "//mediapipe/graphs/face_mesh/calculators:face_landmarks_to_render_data_calculator",
+        "//mediapipe/graphs/inpainting/calculators:face_landmarks_to_render_data_calculator",
     ],
 )
 

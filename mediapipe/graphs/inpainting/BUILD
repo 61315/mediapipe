@@ -24,6 +24,8 @@ package(default_visibility = ["//visibility:public"])
 cc_library(
     name = "inpainting_cpu_deps",
     deps = [
+        "//mediapipe/calculators/core:pass_through_calculator",
+        "//mediapipe/calculators/util:annotation_overlay_calculator",
         "//mediapipe/calculators/core:constant_side_packet_calculator",
         "//mediapipe/calculators/core:flow_limiter_calculator",
         "//mediapipe/calculators/image:recolor_calculator",

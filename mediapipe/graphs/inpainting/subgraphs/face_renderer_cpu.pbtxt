@@ -14,7 +14,9 @@ input_stream: "NORM_RECTS:rects"
 input_stream: "DETECTIONS:detections"
 
 # CPU image with rendered data. (ImageFrame)
-output_stream: "IMAGE:output_image"
+output_stream: "IMAGE:courpus_mask"
+
+#output_stream: "face_mask"
 
 node {
   calculator: "ImagePropertiesCalculator"
@@ -54,8 +56,8 @@ node {
   node_options: {
     [type.googleapis.com/mediapipe.LandmarksToRenderDataCalculatorOptions] {
       landmark_color { r: 255 g: 0 b: 0 }
-      connection_color { r: 0 g: 255 b: 0 }
-      thickness: 2
+      connection_color { r: 255 g: 255 b: 255 }
+      thickness: 1
       visualize_landmark_depth: false
     }
   }
@@ -113,8 +115,8 @@ node {
   output_stream: "RENDER_DATA:corpus_rect_render_data"
   node_options: {
     [type.googleapis.com/mediapipe.RectToRenderDataCalculatorOptions] {
-      filled: false
-      color { r: 255 g: 0 b: 255 }
+      filled: true
+      color { r: 255 g: 255 b: 255 }
       thickness: 2.0
     }
   }
@@ -123,9 +125,33 @@ node {
 # Draws annotations and overlays them on top of the input images.
 node {
   calculator: "AnnotationOverlayCalculator"
-  input_stream: "IMAGE:input_image"
-  input_stream: "detections_render_data"
+  #input_stream: "IMAGE:input_image"
+  #input_stream: "detections_render_data"
   input_stream: "VECTOR:0:multi_face_landmarks_render_data"
-  input_stream: "corpus_rect_render_data"
-  output_stream: "IMAGE:output_image"
+  #input_stream: "corpus_rect_render_data"
+  output_stream: "IMAGE:courpus_mask"
+  node_options: {
+    [type.googleapis.com/mediapipe.AnnotationOverlayCalculatorOptions] {
+      canvas_color { r: 0 g: 0 b: 0 }
+      canvas_width_px: 640
+      canvas_height_px: 480
+    }
+  }
 }
+
+# # Draws annotations and overlays them on top of the input images.
+# node {
+#   calculator: "AnnotationOverlayCalculator"
+#   #input_stream: "IMAGE:input_image"
+#   #input_stream: "detections_render_data"
+#   #input_stream: "VECTOR:0:multi_face_landmarks_render_data"
+#   input_stream: "corpus_rect_render_data"
+#   output_stream: "face_mask"
+#   node_options: {
+#     [type.googleapis.com/mediapipe.AnnotationOverlayCalculatorOptions] {
+#       canvas_color { r: 0 g: 0 b: 0 }
+#       canvas_width_px: 640
+#       canvas_height_px: 480
+#     }
+#   }
+# }

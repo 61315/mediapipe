@@ -14,6 +14,8 @@
 
 licenses(["notice"])
 
+load("//mediapipe/framework/port:build_config.bzl", "mediapipe_proto_library")
+
 package(default_visibility = ["//visibility:public"])
 
 cc_library(
