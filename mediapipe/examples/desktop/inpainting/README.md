@@ -17,18 +17,18 @@
 └───────────────┘└─────────────────┘└─────────────────┘       
 ```
 
-## Build and run
+## Build and Run
 
 ```
-bazel build -c opt --define MEDIAPIPE_DISABLE_GPU=1 mediapipe/examples/desktop/inpainting:inpainting_cpu
+bazel build -c opt --define MEDIAPIPE_DISABLE_GPU=1 mediapipe/examples/desktop/inpainting:inpainting_cpu4
 ```
 
 ```
-GLOG_logtostderr=1 bazel-bin/mediapipe/examples/desktop/inpainting/inpainting_cpu --calculator_graph_config_file=mediapipe/graphs/inpainting/inpainting_cpu.pbtxt
+GLOG_logtostderr=1 bazel-bin/mediapipe/examples/desktop/inpainting/inpainting_cpu4 --calculator_graph_config_file=mediapipe/graphs/inpainting/inpainting_cpu.pbtxt
 ```
 
 Optional `--output_video_path=mediapipe/examples/desktop/inpainting/out.mp4` for video export.
 
 ## Visual checkpoint
 
-![video](./out.mp4)
+[![video](./out.gif)](./out.mp4)

@@ -35,6 +35,7 @@ constexpr char kOutputSelfieMask[] 	= "output_selfie_mask";
 constexpr char kWindowName[] 		= "Inpainting";
 
 /*
+# ImageFormat::SRGB(=CV_8UC3)
 output_stream: "output_video"
 
 # ImageFormat::SRGB(=CV_8UC3)
@@ -109,8 +110,17 @@ absl::Status RunMPPGraph()
 	}
 
 	LOG(INFO) << "Start running the calculator graph.";
-	ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller,
+
+	// TODO: Use single poller that polls a single
+	// output stream that contains multiple `ImageFrame`s.
+	ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller_video,
 					 graph.AddOutputStreamPoller(kOutputVideo));
+	ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller_corpus_mask,
+					 graph.AddOutputStreamPoller(kOutputCorpusMask));
+	ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller_face_mask,
+					 graph.AddOutputStreamPoller(kOutputFaceMask));
+	ASSIGN_OR_RETURN(mediapipe::OutputStreamPoller poller_selfie_mask,
+					 graph.AddOutputStreamPoller(kOutputSelfieMask));
 	MP_RETURN_IF_ERROR(graph.StartRun({}));
 
 	LOG(INFO) << "Start grabbing and processing frames.";
@@ -153,14 +163,46 @@ absl::Status RunMPPGraph()
 							  .At(mediapipe::Timestamp(frame_timestamp_us))));
 
 		// Get the graph result packet, or stop if that fails.
-		mediapipe::Packet packet;
-		if (!poller.Next(&packet))
+		mediapipe::Packet packet_video, packet_corpus_mask, packet_face_mask, packet_selfie_mask;
+		if (!poller_video
+				 .Next(&packet_video) ||
+			!poller_corpus_mask
+				 .Next(&packet_corpus_mask) ||
+			!poller_face_mask
+				 .Next(&packet_face_mask) ||
+			!poller_selfie_mask
+				 .Next(&packet_selfie_mask))
 			break;
-		auto &output_frame = packet.Get<mediapipe::ImageFrame>();
+		auto &output_video = packet_video.Get<mediapipe::ImageFrame>();
 
 		// Convert back to opencv for display or saving.
-		cv::Mat output_frame_mat = mediapipe::formats::MatView(&output_frame);
-		cv::cvtColor(output_frame_mat, output_frame_mat, cv::COLOR_RGB2BGR);
+		cv::Mat output_video_mat = mediapipe::formats::MatView(&output_video);
+		cv::cvtColor(output_video_mat, output_video_mat, cv::COLOR_RGB2BGR);
+
+		// Get the corpus mask mat.
+		auto &output_corpus_mask = packet_corpus_mask.Get<mediapipe::ImageFrame>();
+		cv::Mat output_corpus_mask_mat = mediapipe::formats::MatView(&output_corpus_mask);
+
+		// Prepare the face mask.
+		auto &output_face_mask = packet_face_mask.Get<mediapipe::ImageFrame>();
+		cv::Mat output_face_mask_mat = mediapipe::formats::MatView(&output_face_mask);
+		cv::floodFill(output_face_mask_mat, cv::Point(0, 0), cv::Scalar(255, 255, 255));
+		cv::bitwise_not(output_face_mask_mat, output_face_mask_mat);
+
+		// Prepare the selfie mask.
+		auto &output_selfie_mask = packet_selfie_mask.Get<mediapipe::ImageFrame>();
+		cv::Mat output_selfie_mask_mat = mediapipe::formats::MatView(&output_selfie_mask);
+		output_selfie_mask_mat.convertTo(output_selfie_mask_mat, CV_8U, 255);
+		cv::cvtColor(output_selfie_mask_mat, output_selfie_mask_mat, CV_GRAY2RGB);
+		cv::threshold(output_selfie_mask_mat, output_selfie_mask_mat, 192, 255, CV_THRESH_BINARY);
+
+		// Do arithmetic operations to get the inpainting area mask.
+		cv::Mat inpainting_mask;
+		cv::bitwise_and(output_selfie_mask_mat, output_corpus_mask_mat, inpainting_mask);
+		cv::subtract(inpainting_mask, output_face_mask_mat, inpainting_mask);
+
+		// Overlay the inpainting mask to the original video feed.
+		cv::add(output_video_mat, inpainting_mask, output_video_mat);
 
 		if (save_video)
 		{
@@ -169,26 +211,27 @@ absl::Status RunMPPGraph()
 				LOG(INFO) << "Prepare video writer.";
 				writer.open(absl::GetFlag(FLAGS_output_video_path),
 							mediapipe::fourcc('a', 'v', 'c', '1'), // .mp4
-							capture.get(cv::CAP_PROP_FPS), output_frame_mat.size());
+							capture.get(cv::CAP_PROP_FPS), output_video_mat.size());
 				RET_CHECK(writer.isOpened());
 			}
 
 			// Write the first 100 frames to a video if flag `output_video_path` is set.
-			writer.write(output_frame_mat);
+			writer.write(output_video_mat);
 			LOG(INFO) << "Writing frame " << frame_count << "...";
+			frame_count++;
 			if (frame_count > 99)
+			{
 				grab_frames = false;
+			}
 		}
 		else
 		{
-			cv::imshow(kWindowName, output_frame_mat);
+			cv::imshow(kWindowName, output_video_mat);
 			// Press any key to exit.
 			const int pressed_key = cv::waitKey(5);
 			if (pressed_key >= 0 && pressed_key != 255)
 				grab_frames = false;
 		}
-
-		frame_count++;
 	}
 
 	LOG(INFO) << "Shutting down.";
